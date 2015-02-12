@@ -31,8 +31,7 @@ describe('Webhooks', function(){
     test
       .name('Webhooks')
       .channels(['server', 'mobile', 'client'])
-      .timeout('3s')
-      .retries(1)
+      .timeout('3s');
   });
 
   describe('.validate()', function(){
