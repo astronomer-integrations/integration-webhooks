@@ -27,7 +27,15 @@ describe('Webhooks', function(){
 
   beforeEach(function(){
     settings = {
-      hooks: ['http://localhost:4000']
+      hooks: [{
+        key: 'http://localhost:4000',
+        value: {
+          hook: 'http://localhost:4000',
+          headers: {
+            'X-wheels': 'value'
+          }
+        }
+      }]
     };
     webhooks = new Webhooks(settings);
     Webhooks._reset();
@@ -53,11 +61,35 @@ describe('Webhooks', function(){
       it('should succeed on valid call', function(done){
         var route = '/' + type + '/success';
         settings.hooks = settings.hooks.map(function(hook){
-           return hook + route;
+           hook.value.hook += route;
+           return hook;
         });
 
         app.post(route, function(req, res){
           assert.deepEqual(req.body, json.output);
+          res.send(200);
+        });
+
+        test
+          .set(settings)
+          [type](json.input)
+          .expects(200)
+          .end(done);
+      });
+
+      it('should set any headers', function(done){
+        var route = '/' + type + '/success';
+        settings.hooks = settings.hooks.map(function(hook){
+           hook.value.hook += route;
+           return hook;
+        });
+
+        app.post(route, function(req, res){
+          assert.deepEqual(req.body, json.output);
+          assert.equal(
+            settings.hooks[0].value.headers['X-wheels'],
+            req.headers['X-wheels']
+          );
           res.send(200);
         });
 
@@ -84,6 +116,22 @@ describe('Webhooks', function(){
           .end(done);
       });
 
+      it('should not throw when `.hooks` is an array of strings', function(done){
+        var route = '/' + type + '/success';
+        settings.hooks[0] = 'http://localhost:4000' + route;
+
+        app.post(route, function(req, res){
+          assert.deepEqual(req.body, json.output);
+          res.send(200);
+        });
+
+        test
+          .set(settings)
+          [type](json.input)
+          .expects(200)
+          .end(done);
+      });
+
       it('should send to multiple webhooks', function(done){
         var path1 = '/' + type + '/success';
         var path2 = '/' + type + '/error';
@@ -92,7 +140,25 @@ describe('Webhooks', function(){
         var route2 = 'http://localhost:4000' + path2;
 
         // route1 is explicitly twice to test when there is a bad webhook.
-        settings.hooks = [route1, route2, route1];
+        settings.hooks = [{
+          key: route1,
+          value: {
+            hook: route1,
+            headers: {}
+          }
+        }, {
+          key: route2,
+          value: {
+            hook: route2,
+            headers: {}
+          }
+        }, {
+          key: route1,
+          value: {
+            hook: route1,
+            headers: {}
+          }
+        }];
 
         app.post(path1, function(req, res){
           assert.deepEqual(req.body, json.output);
@@ -127,7 +193,43 @@ describe('Webhooks', function(){
         var path = '/' + type + '/success';
         var route = 'http://localhost:4000' + path;
 
-        settings.hooks = [route, route, route, route, route, route, route];
+        settings.hooks = [{
+          key: route,
+          value: {
+            hook: route,
+            headers: {}
+          }
+        }, {
+          key: route,
+          value: {
+            hook: route,
+            headers: {}
+          }
+        }, {
+          key: route,
+          value: {
+            hook: route,
+            headers: {}
+          }
+        },{
+          key: route,
+          value: {
+            hook: route,
+            headers: {}
+          }
+        }, {
+          key: route,
+          value: {
+            hook: route,
+            headers: {}
+          }
+        }, {
+          key: route,
+          value: {
+            hook: route,
+            headers: {}
+          }
+        }];
 
         app.post(path, function(req, res){
           assert.deepEqual(req.body, json.output);
@@ -149,7 +251,19 @@ describe('Webhooks', function(){
         var route1 = 'http://localhost:4000' + path1;
         var route2 = 'http://localhost:4000' + path2;
 
-        settings.hooks = [route1, route2];
+        settings.hooks = [{
+          key: route1,
+          value: {
+            hook: route1,
+            headers: {}
+          }
+        }, {
+          key: route2,
+          value: {
+            hook: route2,
+            headers: {}
+          }
+        }];
 
         app.post(path2, function(req, res){
           assert.deepEqual(req.body, json.output);
@@ -175,7 +289,8 @@ describe('Webhooks', function(){
       it('should error on invalid calls', function(done){
         var route = '/' + type + '/error';
         settings.hooks = settings.hooks.map(function(hook){
-           return hook + route;
+           hook.value.hook += route;
+           return hook;
         });
 
         app.post(route, function(req, res){
@@ -193,7 +308,8 @@ describe('Webhooks', function(){
       it('should ignore bad reply', function(done){
         var route = '/bad';
         settings.hooks = settings.hooks.map(function(hook){
-           return hook + route;
+           hook.value.hook += route;
+           return hook;
         });
 
         app.post(route, function(req, res){
@@ -211,7 +327,8 @@ describe('Webhooks', function(){
       it('should attach an HMAC digest when options.sharedSecret is present', function(done){
         var route = '/' + type;
         settings.hooks = settings.hooks.map(function(hook){
-           return hook + route;
+           hook.value.hook += route;
+           return hook;
         });
         settings.sharedSecret = 'teehee';
 
@@ -237,12 +354,21 @@ describe('Webhooks', function(){
 
       it('should rate limit bad urls', function(done) {
         var success = settings.hooks[0];
-        var failed = 'http://localhost:7643'
+        var failed = {
+          key: 'http://localhost:4000/no',
+          value: {
+            hook: 'http://localhost:4000/no',
+            headers: {}
+          }
+        }
         settings.hooks.push(failed);
-        app.post('/', function(req, res) { res.send(200 )});
+
+        app.post('/', function(req, res) { res.send(200) });
+        app.post('/no', function(req, res) { res.send(503) });
 
         var batch = new Batch()
           .concurrency(1);
+
         for (var i = 0; i < 50; i++) {
           batch.push(function(done){
             test
