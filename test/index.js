@@ -116,6 +116,22 @@ describe('Webhooks', function(){
           .end(done);
       });
 
+      it('should not throw when `.hooks` is an array of strings', function(done){
+        var route = '/' + type + '/success';
+        settings.hooks[0] = 'http://localhost:4000' + route;
+
+        app.post(route, function(req, res){
+          assert.deepEqual(req.body, json.output);
+          res.send(200);
+        });
+
+        test
+          .set(settings)
+          [type](json.input)
+          .expects(200)
+          .end(done);
+      });
+
       it('should send to multiple webhooks', function(done){
         var path1 = '/' + type + '/success';
         var path2 = '/' + type + '/error';
