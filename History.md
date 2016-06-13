@@ -1,4 +1,9 @@
 
+2.1.1 / 2016-06-13
+==================
+
+  * map headers as arrays of objects with key and value
+
 2.1.0 / 2016-06-07
 =============
 
