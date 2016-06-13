@@ -31,9 +31,10 @@ describe('Webhooks', function(){
         key: 'http://localhost:4000',
         value: {
           hook: 'http://localhost:4000',
-          headers: {
-            'X-wheels': 'value'
-          }
+          headers: [{
+            key: 'X-wheels',
+            value: 'value'
+          }]
         }
       }]
     };
@@ -116,6 +117,28 @@ describe('Webhooks', function(){
           .end(done);
       });
 
+      it('should not throw when `.hooks$value.headers` is an object', function(done){
+        var route = '/' + type + '/success';
+        settings.hooks = [{
+          key: route,
+          value: {
+            hook: route,
+            headers: {}
+          }
+        }];
+
+        app.post(route, function(req, res){
+          assert.deepEqual(req.body, json.output);
+          res.send(200);
+        });
+
+        test
+          .set(settings)
+          [type](json.input)
+          .expects(200)
+          .end(done);
+      });
+
       it('should not throw when `.hooks` is an array of strings', function(done){
         var route = '/' + type + '/success';
         settings.hooks[0] = 'http://localhost:4000' + route;
@@ -144,19 +167,19 @@ describe('Webhooks', function(){
           key: route1,
           value: {
             hook: route1,
-            headers: {}
+            headers: []
           }
         }, {
           key: route2,
           value: {
             hook: route2,
-            headers: {}
+            headers: []
           }
         }, {
           key: route1,
           value: {
             hook: route1,
-            headers: {}
+            headers: []
           }
         }];
 
@@ -197,37 +220,37 @@ describe('Webhooks', function(){
           key: route,
           value: {
             hook: route,
-            headers: {}
+            headers: []
           }
         }, {
           key: route,
           value: {
             hook: route,
-            headers: {}
+            headers: []
           }
         }, {
           key: route,
           value: {
             hook: route,
-            headers: {}
+            headers: []
           }
         },{
           key: route,
           value: {
             hook: route,
-            headers: {}
+            headers: []
           }
         }, {
           key: route,
           value: {
             hook: route,
-            headers: {}
+            headers: []
           }
         }, {
           key: route,
           value: {
             hook: route,
-            headers: {}
+            headers: []
           }
         }];
 
@@ -255,13 +278,13 @@ describe('Webhooks', function(){
           key: route1,
           value: {
             hook: route1,
-            headers: {}
+            headers: []
           }
         }, {
           key: route2,
           value: {
             hook: route2,
-            headers: {}
+            headers: []
           }
         }];
 
@@ -358,7 +381,7 @@ describe('Webhooks', function(){
           key: 'http://localhost:4000/no',
           value: {
             hook: 'http://localhost:4000/no',
-            headers: {}
+            headers: []
           }
         }
         settings.hooks.push(failed);
