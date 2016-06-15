@@ -1,4 +1,9 @@
 
+2.1.2 / 2016-06-15
+==================
+
+  * handle cases where headers subfield might be missing
+
 2.1.1 / 2016-06-13
 ==================
 
