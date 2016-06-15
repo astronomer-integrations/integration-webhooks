@@ -212,6 +212,63 @@ describe('Webhooks', function(){
         test.end(done);
       });
 
+      it('should work for multiple webhooks when missing headers subfield', function(done){
+        var path1 = '/' + type + '/success';
+        var path2 = '/' + type + '/error';
+
+        var route1 = 'http://localhost:4000' + path1;
+        var route2 = 'http://localhost:4000' + path2;
+
+        // route1 is explicitly twice to test when there is a bad webhook.
+        settings.hooks = [{
+          key: route1,
+          value: {
+            hook: route1,
+            headers: []
+          }
+        }, {
+          key: route2,
+          value: {
+            hook: route2,
+
+          }
+        }, {
+          key: route1,
+          value: {
+            hook: route1,
+
+          }
+        }];
+
+        app.post(path1, function(req, res){
+          assert.deepEqual(req.body, json.output);
+          res.send(200);
+        });
+        app.post(path2, function(req, res){
+          assert.deepEqual(req.body, json.output);
+          res.send(503);
+        });
+
+        test
+          .set(settings)
+          .requests(3)
+          [type](json.input);
+
+        test
+          .request(0)
+          .expects(200);
+
+        test
+          .request(1)
+          .expects(503);
+
+        test
+          .request(2)
+          .expects(200);
+
+        test.end(done);
+      });
+
       it('should only send to 5 webhooks', function(done){
         var path = '/' + type + '/success';
         var route = 'http://localhost:4000' + path;
