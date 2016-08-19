@@ -17,7 +17,7 @@
     "is-plain-object": "^2.0.1",
     "lru-cache": "^4.0.0",
     "ms": "^0.7.1",
-    "segmentio-integration": "^3.0.5"
+    "segmentio-integration": "^3.2.2"
   },
   "devDependencies": {
     "express": "~3.2.6",
